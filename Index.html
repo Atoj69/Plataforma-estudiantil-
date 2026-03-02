@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Para Nico 🌸</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Nunito:wght@600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #f472b6;
+            --primary-dark: #db2777;
+            --secondary: #fb7185;
+            --text-dark: #334155;
+            --text-light: #64748b;
+            --glass-bg: rgba(255, 255, 255, 0.85);
+            --shadow-glass: 0 10px 40px 0 rgba(244, 114, 182, 0.25);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            color: var(--text-dark);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(-45deg, #fdf2f8, #fce7f3, #fecdd3, #fff1f2);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            overflow-x: hidden;
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .app-container { width: 100%; max-width: 600px; }
+
+        .card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(15px);
+            border: 2px solid rgba(255, 255, 255, 0.7);
+            border-radius: 24px;
+            padding: 50px 40px;
+            box-shadow: var(--shadow-glass);
+            text-align: center;
+        }
+
+        h1, h2 { font-family: 'Nunito', sans-serif; margin-top: 0; }
+        h1 { font-size: 2.5rem; color: var(--primary-dark); margin-bottom: 10px; }
+        h2 { font-size: 1.5rem; color: var(--text-dark); }
+        p { color: var(--text-light); line-height: 1.7; margin-bottom: 25px; font-size: 1.1rem; }
+
+        .encouragement-main {
+            display: inline-block;
+            font-size: 1em;
+            color: var(--primary-dark);
+            font-weight: 800;
+            padding: 8px 20px;
+            background: rgba(244, 114, 182, 0.15);
+            border-radius: 20px;
+            margin-bottom: 30px;
+        }
+
+        .level {
+            display: none;
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.6s ease-out;
+        }
+        .level.active { display: block; opacity: 1; transform: translateY(0); }
+
+        .game-area {
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 20px;
+            position: relative;
+            margin: 25px 0;
+            border: 3px dashed var(--primary);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: 0.3s;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+
+        /* Nivel 1 - Corazones */
+        #game-area-1 { height: 250px; overflow: hidden; cursor: crosshair; }
+        .heart { position: absolute; font-size: 38px; user-select: none; cursor: pointer; transition: transform 0.1s; }
+        .heart:hover { transform: scale(1.3); }
+
+        /* Nivel 2 - Estrés */
+        .emoji-grid-expert { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; padding: 35px 0; width: 100%; max-width: 400px; margin: 0 auto; }
+        .stress-emoji { font-size: 50px; cursor: pointer; transition: all 0.6s ease; user-select: none; }
+        .stress-emoji.calm { transform: rotateY(360deg) scale(1.15); cursor: default; }
+
+        /* Nivel 3 - Cafetería */
+        #game-area-3 { height: 250px; }
+        .cafe-item-expert { font-size: 45px; position: absolute; animation: floatExpert 5s ease-in-out infinite; }
+        #key-expert { font-size: 40px; position: absolute; top: 70%; left: 20%; opacity: 0; cursor: pointer; transition: all 0.5s ease; transform: scale(0.9); }
+        #key-expert.revealed { opacity: 0.8; transform: scale(1); }
+        #key-expert.found { opacity: 1; transform: scale(1.6) rotate(-20deg); cursor: default; }
+
+        @keyframes floatExpert { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+
+        /* Nivel 4 - Guillo */
+        .drag-area-expert { display: flex; justify-content: space-around; width: 100%; padding: 25px 0; }
+        .draggable { font-size: 50px; cursor: grab; transition: transform 0.25s; }
+        .draggable:active { cursor: grabbing; transform: scale(0.85); }
+        #bracelet-expert { width: 180px; height: 70px; border: 4px dashed #a1a1aa; border-radius: 35px; display: flex; justify-content: center; align-items: center; font-size: 28px; color: #a1a1aa; transition: 0.4s; background: rgba(255,255,255,0.6); margin-bottom: 25px;}
+        #bracelet-expert.completed { border-color: var(--primary-dark); background: rgba(255, 255, 255, 0.95); box-shadow: 0 0 20px rgba(244, 114, 182, 0.6); font-size: 36px; }
+
+        /* --- NUEVO NIVEL 5: QUIZ --- */
+        #quiz-container {
+            width: 100%;
+            padding: 30px;
+            box-sizing: border-box;
+            flex-direction: column;
+        }
+        .quiz-question {
+            font-size: 1.2rem;
+            color: var(--text-dark);
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+        .quiz-btn {
+            background: rgba(255, 255, 255, 0.9);
+            border: 2px solid var(--primary);
+            color: var(--text-dark);
+            padding: 14px 20px;
+            margin: 8px 0;
+            border-radius: 12px;
+            width: 100%;
+            font-size: 1.05rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .quiz-btn:hover {
+            background: var(--primary);
+            color: white;
+            transform: translateY(-2px);
+        }
+        .quiz-btn.correct {
+            background: #10b981;
+            border-color: #10b981;
+            color: white;
+            transform: scale(1.02);
+        }
+        .quiz-btn.wrong {
+            background: #ef4444;
+            border-color: #ef4444;
+            color: white;
+            animation: shake 0.4s;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-8px); }
+            50% { transform: translateX(8px); }
+            75% { transform: translateX(-8px); }
+        }
+
+        /* Historia */
+        .story-text {
+            display: none;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 18px;
+            border-left: 6px solid var(--primary);
+            margin-top: 30px;
+            text-align: left;
+            font-size: 1.15rem;
+            animation: slideUpFadeExpert 0.7s ease-out forwards;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            padding: 16px 32px;
+            border-radius: 9999px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 25px;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 20px rgba(244, 114, 182, 0.5);
+        }
+        .btn:hover { transform: translateY(-4px); box-shadow: 0 8px 25px rgba(244, 114, 182, 0.7); }
+
+        @keyframes slideUpFadeExpert { 0% { opacity: 0; transform: translateY(30px); } 100% { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <div class="card">
+            <h1>Para Nico 🌸 Retos Expertos</h1>
+            <p>Hola, mi amorchito. Te he preparado unos retos más difíciles para recordar nuestra historia. ¡Tú puedes, mi amorchito! ✨</p>
+
+            <div id="level-1" class="level active">
+                <h2>1. La Estudiante y el de IT</h2>
+                <p>Atrapa 10 corazones que caen velozmente.</p>
+                <div id="game-area-1" class="game-area"></div>
+                <div style="font-weight: 800; color: var(--primary-dark); font-size: 1.2em;">Atrapados: <span id="score-1">0</span>/10</div>
+                <span style="display:block; margin-top:10px; color:var(--primary); font-weight:600;">¡Demuestra tu rapidez, tú puedes! 🌸</span>
+                
+                <div id="story-1" class="story-text">
+                    Tú eras estudiante en el instituto y yo brindaba soporte en el área de IT. Desde el principio me pareciste muy linda. Chi, así de rápido me cautivaste. Cuando estábamos a solas siempre te miraba el pelo, porque amo tu pelo rizo.
+                    <button class="btn" onclick="goToLevelExpert(2)">Siguiente Recuerdo ✨</button>
+                </div>
+            </div>
+
+            <div id="level-2" class="level">
+                <h2>2. Todo de Ti</h2>
+                <p>Relaja 6 caritas estresadas más resistentes.</p>
+                <div class="game-area">
+                    <div class="emoji-grid-expert" id="game-area-2">
+                        <span class="stress-emoji" onclick="calmEmojiExpert(this)">😫</span>
+                        <span class="stress-emoji" onclick="calmEmojiExpert(this)">😫</span>
+                        <span class="stress-emoji" onclick="calmEmojiExpert(this)">😫</span>
+                        <span class="stress-emoji" onclick="calmEmojiExpert(this)">😫</span>
+                        <span class="stress-emoji" onclick="calmEmojiExpert(this)">😫</span>
+                        <span class="stress-emoji" onclick="calmEmojiExpert(this)">😫</span>
+                    </div>
+                </div>
+                <span style="display:block; margin-top:10px; color:var(--primary); font-weight:600;">¡Desestresa esas caritas, mi amorchito! 🌸</span>
+                
+                <div id="story-2" class="story-text">
+                    Después empezamos a hablar, y aunque no lo sabías, yo me estaba muriendo de amor. Amo tu forma de ser: tu personalidad tierna, curiosa e inteligente. Disfruto tanto compartir contigo, hasta armando casitas en nuestro mundo de Minecraft. Y chi, te amo hasta cuando te estresas con pequeñas cosas.
+                    <button class="btn" onclick="goToLevelExpert(3)">Siguiente Recuerdo ✨</button>
+                </div>
+            </div>
+
+            <div id="level-3" class="level">
+                <h2>3. El Caos Perfecto</h2>
+                <p>Pasa el cursor por el área de la cafetería para encontrar la llave.</p>
+                <div id="game-area-3" class="game-area" onmousemove="revealKeyExpert()" ontouchmove="revealKeyExpert()">
+                    <span class="cafe-item-expert" style="top:20%; left:15%; animation-delay: 0s;">☕🍩🍔🍟</span>
+                    <span class="cafe-item-expert" style="top:50%; left:55%; animation-delay: 1s;">🍕🥪🍰🍬</span>
+                    <span class="cafe-item-expert" style="top:30%; left:75%; animation-delay: 2s;">☕🍩🍔🍟</span>
+                    <span class="cafe-item-expert" style="top:60%; left:30%; animation-delay: 3s;">🍕🥪🍰🍬</span>
+                    <span id="key-expert" onclick="foundKeyExpert(event)">🔑</span>
+                </div>
+                <span style="display:block; margin-top:10px; color:var(--primary); font-weight:600;">¡Búscala bien, tú puedes mi amorchito! 🌸</span>
+                
+                <div id="story-3" class="story-text">
+                    Nuestra primera cita fue en la cafetería Millita. Yo estaba súper nervioso y tú estabas hermosa, como siempre. Luego salimos a dar vueltas por la ciudad y pasó lo mejor: se te perdió la llave de la moto. Entre el pequeño caos y las risas, sabía que esto era especial.
+                    <button class="btn" onclick="goToLevelExpert(4)">El Último Recuerdo ✨</button>
+                </div>
+            </div>
+
+            <div id="level-4" class="level">
+                <h2>4. Una Promesa</h2>
+                <p>Arma el regalo arrastrando la perla y el larimar.</p>
+                <div class="game-area" style="flex-direction: column; padding: 30px 0;">
+                    <div class="drag-area-expert">
+                        <span class="draggable" draggable="true" id="item-perla" ondragstart="dragStartExpert(event)">⚪</span>
+                        <span class="draggable" draggable="true" id="item-larimar" ondragstart="dragStartExpert(event)">🔵</span>
+                        <span class="draggable" draggable="true" id="item-rubi" ondragstart="dragStartExpert(event)">🔴</span>
+                        <span class="draggable" draggable="true" id="item-esmeralda" ondragstart="dragStartExpert(event)">🟢</span>
+                    </div>
+                    <div id="bracelet-expert" ondrop="dropExpert(event)" ondragover="allowDropExpert(event)">
+                        Guillo
+                    </div>
+                </div>
+                <span style="display:block; margin-top:10px; color:var(--primary); font-weight:600;">¡Tú puedes recordar las gemas correctas, mi amorchito! 🌸</span>
+                
+                <div id="story-4" class="story-text">
+                    Luego vino la cita en Applebee's y el parque Mirador Norte, donde te regalé el guillo de plata con una perla y un larimar. Hoy quiero recordarte que siempre te elegiría a ti, porque de verdad te amo, Nico.
+                    <button class="btn" onclick="goToLevelExpert(5); initQuiz();">El Gran Final ✨</button>
+                </div>
+            </div>
+
+            <div id="level-5" class="level">
+                <h2>5. ¿Qué tanto recuerdas?</h2>
+                <p>Demuestra que tienes buena memoria respondiendo estas preguntitas sobre nosotros.</p>
+                <div class="game-area" id="quiz-container">
+                    </div>
+                
+                <div id="story-5" class="story-text">
+                    ¡Acertaste todo! Desde que te conocí en el instituto hasta nuestras citas perdidos por la ciudad, cada detalle lo guardo en mi corazón. Eres mi lugar favorito y mi compañera perfecta. Te amo muchísimo, mi amorchito. 🌸💖
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // --- Navegación ---
+        function goToLevelExpert(levelNum) {
+            const current = document.querySelector('.level.active');
+            current.style.opacity = '0';
+            current.style.transform = 'translateY(-30px)';
+            setTimeout(() => {
+                current.classList.remove('active');
+                const next = document.getElementById(`level-${levelNum}`);
+                next.classList.add('active');
+                void next.offsetWidth; 
+                next.style.opacity = '1';
+                next.style.transform = 'translateY(0)';
+            }, 600);
+        }
+
+        // --- Nivel 1 - Corazones ---
+        let score1Expert = 0;
+        let heartIntervalExpert;
+        
+        function startLevel1Expert() {
+            const area = document.getElementById('game-area-1');
+            heartIntervalExpert = setInterval(() => {
+                if (score1Expert >= 10 || !document.getElementById('level-1').classList.contains('active')) {
+                    clearInterval(heartIntervalExpert);
+                    return;
+                }
+                
+                const heart = document.createElement('span');
+                heart.innerHTML = '💖';
+                heart.className = 'heart';
+                heart.style.left = (Math.random() * 80) + '%';
+                heart.style.top = '0px';
+                
+                area.appendChild(heart);
+                
+                let posY = 0;
+                let fallSpeed = 2 + (Math.random() * 3);
+                let boxHeight = area.offsetHeight;
+                
+                const fall = setInterval(() => {
+                    if (posY >= boxHeight) {
+                        clearInterval(fall);
+                        if (heart.parentNode) heart.remove();
+                    } else {
+                        posY += fallSpeed;
+                        heart.style.top = posY + 'px';
+                    }
+                }, 20);
+
+                heart.onclick = () => {
+                    score1Expert++;
+                    document.getElementById('score-1').innerText = score1Expert;
+                    clearInterval(fall);
+                    heart.style.transform = 'scale(0)';
+                    setTimeout(() => { if(heart.parentNode) heart.remove(); }, 100);
+                    
+                    if (score1Expert === 10) {
+                        document.getElementById('story-1').style.display = 'block';
+                        clearInterval(heartIntervalExpert);
+                    }
+                };
+            }, 600);
+        }
+        startLevel1Expert();
+
+        // --- Nivel 2 - Estrés ---
+        let calmCountExpert = 0;
+        function calmEmojiExpert(el) {
+            if (el.innerHTML === '😫') {
+                el.innerHTML = '🌸'; el.classList.add('calm'); calmCountExpert++;
+                if (calmCountExpert === 6) setTimeout(() => document.getElementById('story-2').style.display = 'block', 600);
+            }
+        }
+
+        // --- Nivel 3 - Cafetería ---
+        function revealKeyExpert() {
+            const key = document.getElementById('key-expert');
+            if(!key.classList.contains('found')) key.classList.add('revealed');
+        }
+        function foundKeyExpert(e) {
+            e.stopPropagation();
+            const key = document.getElementById('key-expert');
+            key.classList.add('found');
+            setTimeout(() => document.getElementById('story-3').style.display = 'block', 500);
+        }
+
+        // --- Nivel 4 - Guillo ---
+        let itemsInBraceletExpert = 0;
+        function allowDropExpert(e) { e.preventDefault(); }
+        function dragStartExpert(e) { e.dataTransfer.setData("text", e.target.id); }
+        function dropExpert(e) {
+            e.preventDefault();
+            const bracelet = document.getElementById('bracelet-expert');
+            const data = e.dataTransfer.getData("text");
+            const dragged = document.getElementById(data);
+            
+            if (dragged && (data === 'item-perla' || data === 'item-larimar')) {
+                if (itemsInBraceletExpert === 0) bracelet.innerHTML = ''; 
+                bracelet.appendChild(dragged);
+                dragged.style.margin = '0 5px';
+                dragged.style.fontSize = '35px'; 
+                itemsInBraceletExpert++;
+                
+                if (itemsInBraceletExpert === 2) {
+                    bracelet.classList.add('completed');
+                    setTimeout(() => document.getElementById('story-4').style.display = 'block', 600);
+                }
+            } else if (dragged) {
+                bracelet.style.borderColor = 'red';
+                setTimeout(() => bracelet.style.borderColor = '#a1a1aa', 300);
+            }
+        }
+
+        // --- NUEVO NIVEL 5: QUIZ INTERACTIVO ---
+        const quizData = [
+            {
+                question: "¿Dónde fue nuestra primera cita oficial?",
+                options: ["En el instituto de IT", "En Applebee's", "En la cafetería Millita"],
+                correctAnswer: 2 // Índice de la respuesta correcta (empieza en 0)
+            },
+            {
+                question: "¿Qué caos divertido nos pasó en esa primera cita dando vueltas?",
+                options: ["Se nos ponchó una goma", "Se te perdió la llave de la moto", "Nos agarró la lluvia"],
+                correctAnswer: 1
+            },
+            {
+                question: "¿Cuáles son las piedras del guillo de plata que te regalé?",
+                options: ["Una perla y un larimar", "Un rubí y una esmeralda", "Una perla y un zafiro"],
+                correctAnswer: 0
+            }
+        ];
+
+        let currentQuestionIndex = 0;
+
+        function initQuiz() {
+            renderQuestion();
+        }
+
+        function renderQuestion() {
+            const container = document.getElementById('quiz-container');
+            
+            // Si ya respondió todas las preguntas
+            if (currentQuestionIndex >= quizData.length) {
+                container.innerHTML = `<h3 style="color: var(--primary-dark); font-family: 'Nunito', sans-serif; font-size: 1.5rem; text-align: center;">¡Memoria perfecta, mi amorchito! 🌸</h3>`;
+                container.style.border = "none";
+                container.style.boxShadow = "none";
+                container.style.background = "transparent";
+                setTimeout(() => {
+                    document.getElementById('story-5').style.display = 'block';
+                }, 500);
+                return;
+            }
+
+            const currentData = quizData[currentQuestionIndex];
+            
+            let htmlContent = `<div class="quiz-question">${currentQuestionIndex + 1}. ${currentData.question}</div>`;
+            
+            currentData.options.forEach((option, index) => {
+                htmlContent += `<button class="quiz-btn" onclick="checkAnswer(${index}, ${currentData.correctAnswer}, this)">${option}</button>`;
+            });
+
+            container.innerHTML = htmlContent;
+        }
+
+        function checkAnswer(selectedIndex, correctIndex, buttonElement) {
+            // Deshabilitar todos los botones temporalmente para evitar doble clic
+            const allButtons = document.querySelectorAll('.quiz-btn');
+            allButtons.forEach(btn => btn.style.pointerEvents = 'none');
+
+            if (selectedIndex === correctIndex) {
+                buttonElement.classList.add('correct');
+                setTimeout(() => {
+                    currentQuestionIndex++;
+                    renderQuestion();
+                }, 800);
+            } else {
+                buttonElement.classList.add('wrong');
+                setTimeout(() => {
+                    buttonElement.classList.remove('wrong');
+                    // Volver a habilitar los botones
+                    allButtons.forEach(btn => btn.style.pointerEvents = 'auto');
+                }, 500);
+            }
+        }
+    </script>
+</body>
+</html>
