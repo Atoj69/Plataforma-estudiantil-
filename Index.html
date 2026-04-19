@@ -7052,7 +7052,6 @@ function editDgPrecio(id){
 function startDgFirebaseSync(){
   if(!window._fb) return;
   window._fb.listenArtworks(fbArtworks=>{
-    if(fbArtworks.length === 0 && artworksDesign.length > 0) return;
     artworksDesign = fbArtworks;
     save('artworks_design', artworksDesign);
     if(window.currentPortfolio === 'diseno'){
@@ -7212,7 +7211,6 @@ window.doSearch = function(q){
 
     // 1. Sincronización de Ilustraciones
     window._fb.listenArtworks(fbArtworks=>{
-      if(fbArtworks.length === 0 && artworks.length > 0) return;
       artworks = fbArtworks;
       save('artworks', artworks);
       if(window.currentPortfolio==='ilust'){
@@ -7225,7 +7223,6 @@ window.doSearch = function(q){
     });
     // 2. Sincronización de Diseño Gráfico
     window._fb.listenArtworks(fbDesign => {
-      if(fbDesign.length === 0 && artworksDesign.length > 0) return;
       artworksDesign = fbDesign;
       save('artworks_design', artworksDesign);
       if(window.currentPortfolio === 'diseno'){
@@ -7235,21 +7232,18 @@ window.doSearch = function(q){
     }, 'artworks_design');
     // 3. Sincronización de Procesos — imágenes antes/después
     window._fb.listenArtworks(fbProcesos => {
-      if(fbProcesos.length === 0 && procesos.length > 0) return;
       procesos = fbProcesos;
       save('procesos', procesos);
       if(typeof renderProceso === 'function') renderProceso();
     }, 'procesos');
     // 4. Sincronización de Videos de Proceso — Ilustración
     window._fb.listenArtworks(fbProcesosVid => {
-      if(fbProcesosVid.length === 0 && procesosVideo.length > 0) return;
       procesosVideo = fbProcesosVid;
       save('procesos_video', procesosVideo);
       if(typeof renderProcesosVideo === 'function') renderProcesosVideo();
     }, 'procesos_video');
     // 5. Sincronización de Videos de Proceso — Diseño Gráfico
     window._fb.listenArtworks(fbDgVid => {
-      if(fbDgVid.length === 0 && dgProcesosVideo.length > 0) return;
       dgProcesosVideo = fbDgVid;
       save('dg_procesos_video', dgProcesosVideo);
       if(typeof renderDgProcesosVideo === 'function') renderDgProcesosVideo();
