@@ -28,7 +28,7 @@
 <!-- Firebase -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, query, orderBy, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDnuIl60Z6s7_nT-wklUmGVZB4aUDyW2Xw",
@@ -75,15 +75,51 @@ window._fb = {
     }
   },
 
-  async deleteArtwork(id, col='artworks'){
-    const sid = String(id);
+  async deleteArtwork(id, col='artworks', docId=null){
+    const idObj = (id && typeof id === 'object') ? id : null;
+    const rawId = idObj ? idObj.id : id;
+    const explicitDocId = idObj ? (idObj._docId || idObj.docId || docId) : docId;
+    const sid = rawId == null ? '' : String(rawId);
     _pendingWrites[col] = _pendingWrites[col] || new Set();
-    _pendingWrites[col].add(sid);
+    const pending = _pendingWrites[col];
+    const deletedDocIds = new Set();
+
+    const rememberPending = (did)=>{
+      if(!did) return;
+      const key = String(did);
+      pending.add(key);
+      deletedDocIds.add(key);
+    };
+
+    const deleteByDocId = async (did)=>{
+      if(!did) return;
+      const key = String(did);
+      if(deletedDocIds.has(key)) return;
+      await deleteDoc(doc(db, col, key));
+      rememberPending(key);
+    };
+
     try {
-      await deleteDoc(doc(db, col, sid));
-      setTimeout(() => _pendingWrites[col]?.delete(sid), 3000);
+      if(explicitDocId != null && String(explicitDocId)) await deleteByDocId(explicitDocId);
+      if(sid) await deleteByDocId(sid);
+
+      // Backward compatibility: some older docs may have random Firestore doc IDs.
+      // Remove any document whose `id` field matches the provided id.
+      if(rawId != null){
+        const matches = new Set([rawId, sid].filter(v => v !== ''));
+        for(const match of matches){
+          const snap = await getDocs(query(collection(db, col), where('id', '==', match)));
+          for(const row of snap.docs){
+            await deleteByDocId(row.id);
+          }
+        }
+      }
+
+      deletedDocIds.forEach(did=>{
+        setTimeout(() => _pendingWrites[col]?.delete(did), 3000);
+      });
     } catch(e) {
-      _pendingWrites[col]?.delete(sid);
+      deletedDocIds.forEach(did => _pendingWrites[col]?.delete(did));
       console.error('FB deleteArtwork:', e);
       toast('Error al eliminar: ' + e.message);
     }
@@ -100,13 +136,25 @@ window._fb = {
       if(allOwnWrites) return; // This snapshot is just our own write echoing back
 
       const items = [];
-      snap.forEach(d => { const data = d.data(); delete data.adminKey; items.push(data); });
+      snap.forEach(d => {
+        const data = d.data() || {};
+        delete data.adminKey;
+        if(data.id === undefined || data.id === null) data.id = d.id;
+        data._docId = d.id;
+        items.push(data);
+      });
       cb(items);
     }, err => {
       // Fallback without orderBy if index missing
       onSnapshot(collection(db, col), snap => {
         const items = [];
-        snap.forEach(d => { const data = d.data(); delete data.adminKey; items.push(data); });
+        snap.forEach(d => {
+          const data = d.data() || {};
+          delete data.adminKey;
+          if(data.id === undefined || data.id === null) data.id = d.id;
+          data._docId = d.id;
+          items.push(data);
+        });
         cb(items);
       });
     });
@@ -3521,6 +3569,12 @@ function load(key,def){
   try{const v=localStorage.getItem('nikki_'+key);return v?JSON.parse(v):def}
   catch(e){return def}
 }
+function idsEqual(a,b){
+  return String(a) === String(b);
+}
+function inlineJsValue(v){
+  return JSON.stringify(v ?? null);
+}
 
 // ════════════════════════════
 //  INITIAL DATA
@@ -6590,6 +6644,7 @@ function buildDgCards(items, gridId, extraFilter){
     const tools = (a.tools||'').split(',').map(t=>t.trim()).filter(Boolean);
     const catLabel = getDgCatLabel(a.cat);
     const mode = a.imgMode || 'single';
+    const aid = inlineJsValue(a.id);
 
     // Build image section based on presentation mode
     let imgSection;
@@ -6621,9 +6676,9 @@ function buildDgCards(items, gridId, extraFilter){
           <div class="dg-card-overlay-sub">${catLabel}${a.client?' · '+esc(a.client):''}</div>
         </div>
         <div class="dg-card-actions">
-          <div class="mini-btn" onclick="event.stopPropagation();openShare(${Number(a.id)},true)">🔗</div>
-          ${isAdmin?`<div class="mini-btn" onclick="event.stopPropagation();editDgArtwork(${Number(a.id)})">✏️</div>
-          <div class="mini-btn del" onclick="event.stopPropagation();deleteDgArtwork(${Number(a.id)})">🗑️</div>`:''}
+          <div class="mini-btn" onclick="event.stopPropagation();openShare(${aid},true)">🔗</div>
+          ${isAdmin?`<div class="mini-btn" onclick="event.stopPropagation();editDgArtwork(${aid})">✏️</div>
+          <div class="mini-btn del" onclick="event.stopPropagation();deleteDgArtwork(${aid})">🗑️</div>`:''}
         </div>
       </div>
       <div class="dg-card-meta">
@@ -6738,7 +6793,7 @@ function saveDgArtwork(){
   const tools    = document.getElementById('dg-art-tools').value.trim();
   const featured = document.getElementById('dg-art-featured').value==='true';
   const btn      = document.getElementById('dg-upload-save-btn');
-  const existing = editingDgArtId ? artworksDesign.find(a=>a.id===editingDgArtId) : null;
+  const existing = editingDgArtId != null ? artworksDesign.find(a=>idsEqual(a.id, editingDgArtId)) : null;
 
   const doSave=(img1Url, img2Url)=>{
     const obj={
@@ -6752,7 +6807,7 @@ function saveDgArtwork(){
     if(!obj.img){ toast('Por favor selecciona al menos una imagen'); btn.disabled=false; btn.textContent='Guardar proyecto'; return; }
 
     if(editingDgArtId){
-      const idx=artworksDesign.findIndex(a=>a.id===editingDgArtId);
+      const idx=artworksDesign.findIndex(a=>idsEqual(a.id, editingDgArtId));
       if(idx>-1) artworksDesign[idx]={...artworksDesign[idx],...obj};
       toast('Proyecto actualizado ✓');
     } else {
@@ -6764,7 +6819,7 @@ function saveDgArtwork(){
     save('artworks_design', artworksDesign);
     if(window._fb){
       const saved = editingDgArtId
-        ? artworksDesign.find(a=>a.id===editingDgArtId)
+        ? artworksDesign.find(a=>idsEqual(a.id, editingDgArtId))
         : artworksDesign[artworksDesign.length-1];
       if(saved) window._fb.saveArtwork(saved, 'artworks_design');
     }
@@ -6794,8 +6849,8 @@ function saveDgArtwork(){
 }
 
 function editDgArtwork(id){
-  const a=artworksDesign.find(x=>x.id===id); if(!a) return;
-  editingDgArtId=id; dgFiles={main:null,img2:null};
+  const a=artworksDesign.find(x=>idsEqual(x.id,id)); if(!a) return;
+  editingDgArtId=a.id; dgFiles={main:null,img2:null};
   document.getElementById('dg-modal-title-text').textContent='Editar proyecto';
   document.getElementById('dg-art-title').value   =a.title;
   document.getElementById('dg-art-cat').value     =a.cat;
@@ -6939,8 +6994,9 @@ function deleteDgProcesVideo(id){
 
 function deleteDgArtwork(id){
   if(!confirm('¿Eliminar este proyecto?')) return;
-  artworksDesign = artworksDesign.filter(a=>a.id!==id);
-  if(window._fb) window._fb.deleteArtwork(id, 'artworks_design');
+  const target = artworksDesign.find(a=>idsEqual(a.id, id));
+  artworksDesign = artworksDesign.filter(a=>!idsEqual(a.id, id));
+  if(window._fb) window._fb.deleteArtwork(target || { id }, 'artworks_design');
   save('artworks_design', artworksDesign);
   renderDgGallery(); renderDgBranding(); renderDgEditorial(); renderDgHomePreview();
   toast('Proyecto eliminado');
